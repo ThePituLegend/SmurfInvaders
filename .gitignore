@@ -1,0 +1,5 @@
+main.exe
+main.code-workspace
+Makefile.Android
+.vscode/*
+raylib_cheatsheet.pdf
