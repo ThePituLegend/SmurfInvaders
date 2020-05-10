@@ -15,10 +15,10 @@ However, I'm trying to do most of the progress on streaming, so check out my [Tw
 * Dummy enemy
 
 ## TODO list
-* Enemy pooling (same system as the bullets, probably)
-* Enemy behaviour
-* Damageable player
-* HUD (Life + Score. I'll decide later how life managing will work)
-* Dynamic scenario
-* Music
-* Sound effects
+* [] Enemy pooling (same system as the bullets, probably)
+* [] Enemy behaviour
+* [] Damageable player
+* [] HUD (Life + Score. I'll decide later how life managing will work)
+* [] Dynamic scenario
+* [] Music
+* [] Sound effects
