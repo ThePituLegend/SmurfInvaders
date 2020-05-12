@@ -12,31 +12,31 @@
 
 #include "entity.h"
 
-void initEntity(Entity* entity, Model* model, BoundingBox bounds, Color shadow, float shadowAlpha, Color tint,
-				Color border, Vector3 position, Vector3 shadowOffset, float speed, bool active){
+void initEntity(Entity* entity, Model* model, BoundingBox* bounds, Color tint,
+				Color border, Vector3 position, float speed, float scale, bool active){
 	
 	// Inits the entity struct, element by element
 	entity->model = model;
-	entity->bounds = bounds;
-	entity->shadow = shadow;
-	entity->shadow.a = shadowAlpha;
+	entity->bounds = *bounds;
+	entity->refBounds = bounds;
 	entity->tint = tint;
 	entity->border = border;
-	entity->position = position;
-	entity->shadowOffset = shadowOffset;
 	entity->speed = speed;
+	entity->scale = scale;
 	entity->active = active;
+
+	moveEntityVect(entity, position);
 }
 
-void initEntityPool(Entity* pool, int size, Model* model, BoundingBox bounds, Color shadow, float shadowAlpha, Color tint,
-				Color border, Vector3 position, Vector3 shadowOffset, float speed){
+void initEntityPool(Entity* pool, int size, Model* model, BoundingBox* bounds, Color tint,
+				Color border, Vector3 position, float speed, float scale){
 	
 	// Iterates through the given entity array
 	for (int i = 0; i < size; i++)
 	{
 		// Inits each entity
-		initEntity(&(pool[i]), model, bounds, shadow, shadowAlpha, tint, border, 
-			position, shadowOffset, speed, false);
+		initEntity(&pool[i], model, bounds, tint, border, 
+			position, speed, scale, false);
 	}
 }
 
@@ -49,4 +49,31 @@ void recalculateBounds(Entity* entity, BoundingBox referenceBox){
 	// DEBUG
 	//TraceLog(LOG_DEBUG, "Bounds min: (%.2f, %.2f, %.2f)", entity->bounds.min.x, entity->bounds.min.y, entity->bounds.min.z);
 	//TraceLog(LOG_DEBUG, "Bounds max: (%.2f, %.2f, %.2f)", entity->bounds.max.x, entity->bounds.max.y, entity->bounds.max.z));
+}
+
+void moveEntityVect(Entity* entity, Vector3 newPos){
+	entity->position = newPos; // Set new position
+	recalculateBounds(entity, *entity->refBounds); // Recalculate collision box
+}
+
+void moveEntity(Entity* entity, float x, float y, float z){
+	entity->position = (Vector3){x, y, z}; // Set new position
+	recalculateBounds(entity, *entity->refBounds); // Recalculate collision box
+}
+
+void drawEntity(Entity* entity){
+	DrawModel(*entity->model, entity->position, entity->scale, entity->tint);
+	DrawModelWires(*entity->model, entity->position, entity->scale, entity->border);
+	DrawModel(*entity->model, Vector3Add(entity->position, defaultShadow.offset), entity->scale, defaultShadow.color);
+	//DrawBoundingBox(entity->bounds, YELLOW); //DEBUG
+}
+
+void drawEntityPool(Entity* pool, int size){
+	for (int i = 0; i < size; i++)
+		{
+			if (pool[i].active){
+				// Draw entity + border + shadow
+				drawEntity(&pool[i]);
+			}
+		}
 }

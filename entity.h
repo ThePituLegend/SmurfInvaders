@@ -17,26 +17,27 @@
 *
 ********************************************************************************************/
 
-#pragma once
+#ifndef ENTITY_H
+#define ENTITY_H
 
 // Raylib
 #include "raylib.h"
 #include "raymath.h"
+#include "constants.h"
 
 // Entity Definition
 typedef struct Entity
 {
 	Model* model; // Pointer to the model
-	BoundingBox bounds; // Colision box
-	Vector3 position;
-	Vector3 shadowOffset; // Shadow is drawn as the model offsetted
-	Color shadow; // Shadow color
+	BoundingBox bounds; // Collision box
+	BoundingBox* refBounds; //Reference collision box
+	Vector3 position; // Position
 	Color tint; // Entity color
 	Color border; // Border color
-	float speed;
+	float speed; // Entity speed
+	float scale; // Entity Scaling
 	bool active; // This determines whether the entity is interactible and drawn
 } Entity;
-
 
 // Defines some specific type of entities. Mostly semantic sugar
 typedef Entity Player;
@@ -44,12 +45,22 @@ typedef Entity Bullet;
 typedef Entity Enemy;
 
 // Initializes an entity with the given parameters
-void initEntity(Entity* entity, Model* model, BoundingBox bounds, Color shadow, float shadowAlpha, Color tint,
-				Color border, Vector3 position, Vector3 shadowOffset, float speed, bool active);
+void initEntity(Entity* entity, Model* model, BoundingBox* bounds, Color tint,
+				Color border, Vector3 position, float speed, float scale, bool active);
 
 // Initializes a pool (array) of entities with the given parameters. Items of the pool are disabled by default
-void initEntityPool(Entity* pool, int size, Model* model, BoundingBox bounds, Color shadow, float shadowAlpha, Color tint,
-				Color border, Vector3 position, Vector3 shadowOffset, float speed);
+void initEntityPool(Entity* pool, int size, Model* model, BoundingBox* bounds, Color tint,
+				Color border, Vector3 position, float speed, float scale);
 
-// Recalculate the colision box for a given entity, given a reference box of that entity
+// Recalculate the collision box for a given entity, given a reference box of that entity
 void recalculateBounds(Entity* entity, BoundingBox referenceBox);
+
+// Move Entity while carrying the collision box
+void moveEntity(Entity* entity, float x, float y, float z);
+void moveEntityVect(Entity* entity, Vector3 newPos);
+
+// Drawing functions
+void drawEntity(Entity* entity);
+void drawEntityPool(Entity* pool, int size);
+
+#endif

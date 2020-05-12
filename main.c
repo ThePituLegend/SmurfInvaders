@@ -36,10 +36,13 @@ int main()
 	BoundingBox bulletBounds;
 
 	// Enemy related variables
-	Enemy enemy;
+	Enemy enemyPool[maxEnemies];
 	Mesh enemyMesh;
 	Model enemyModel;
 	BoundingBox enemyBounds;
+
+	// Timer to control enemy spawn rate
+	float timerEnemy = 0.0f;
 
 	Camera camera;
 
@@ -59,9 +62,8 @@ int main()
 
 	// Generate all meshes
 	playerMesh = GenMeshPoly(3, 2.0f);
-	bulletMesh = GenMeshSphere(0.5f,10,10);
+	bulletMesh = GenMeshSphere(0.5f, 10, 10);
 	enemyMesh = GenMeshCube(1.0f, 1.0f, 1.0f);
-
 
 	// Generate all models
 	playerModel = LoadModelFromMesh(playerMesh);
@@ -74,17 +76,12 @@ int main()
 	enemyBounds = MeshBoundingBox(enemyMesh);
 
 	// Initialization of entities
-	initEntity(&player, &playerModel, playerBounds, BLACK, 100.0f, BLUE, BLACK, 
-			(Vector3){0.0f, yPos, 0.0f}, (Vector3){0.2f, -yPos, 0.0f}, 10.0f, true);
+	initEntity(&player, &playerModel, &playerBounds, BLUE, BLACK, (Vector3){0.0f, yPos, 0.0f}, 10.0f, 1.0f, true);
 
-	initEntityPool(bulletPool, maxBullets, &bulletModel, bulletBounds, BLACK, 100.0f, GREEN, BLACK, 
-			(Vector3){0.0f, yPos, 2.5f}, (Vector3){0.2f, -yPos, 0.0f}, 10.0f);
+	initEntityPool(bulletPool, maxBullets, &bulletModel, &bulletBounds, GREEN, BLACK, (Vector3){0.0f, yPos, 2.5f}, 10.0f, 0.5f);
 
-	initEntity(&enemy, &enemyModel, enemyBounds, BLACK, 100.0f, BLACK, PURPLE, 
-			(Vector3){0.0f, yPos, 8.0f}, (Vector3){0.2f, -yPos, 0.0f}, 0.0f, true);
+	initEntityPool(enemyPool, maxEnemies, &enemyModel, &enemyBounds, BLACK, PURPLE, (Vector3){0.0f, yPos, 8.0f}, 0.0f, 1.2f);
 	
-	recalculateBounds(&enemy, enemyBounds); // TEMPORAL, while enemy is dummy
-
 	SetTargetFPS(60); // Set our game to run at 60 frames-per-second
 	//--------------------------------------------------------------------------------------
 
@@ -93,14 +90,17 @@ int main()
 	{
 		// Update
 		//----------------------------------------------------------------------------------
+
+		// Timers control. Increment timer with time elapsed since last frame.
+		timerEnemy += GetFrameTime(); 
+
 		UpdateCamera(&camera); // Update camera (I think this is unnecessary in this case. TODO test this hypothesis)
 
 		// Get player input to move player entity.
-		// speed * frameTime = framerate-indepedant movement
+		// speed * frameTime = framerate-independant movement
 		player.position.x += player.speed * IsKeyDown(KEY_A) * GetFrameTime();
 		player.position.x -= player.speed * IsKeyDown(KEY_D) * GetFrameTime();
-		player.position.x = Clamp(player.position.x, rightXLimit, leftXLimit); // Limits player positions between designed region
-		recalculateBounds(&player, playerBounds); // Recalculate player bounding box
+		moveEntity(&player, Clamp(player.position.x, rightXLimit, leftXLimit), player.position.y, player.position.z);
 		//TraceLog(LOG_DEBUG, "Player X = %.2f", player.position.x);
 
 		// Bullet shooting
@@ -116,12 +116,12 @@ int main()
 				{
 					bulletPool[i].active = true; // Mark bullet as used (render & interactive)
 
-					bulletPool[i].position = (Vector3){player.position.x, yPos, 2.5f}; // Bullet position, fixed by player position
-
+					moveEntity(&bulletPool[i], player.position.x, yPos, 2.5f);
+					
 					foundBullet = true; // Stop pool search
 				}
 
-				i++;
+				i++; // Thx my pana Dubledoh!
 			}
 		}
 
@@ -130,21 +130,71 @@ int main()
 		{
 			// If active, move
 			if (bulletPool[i].active){
-				bulletPool[i].position.z += bulletPool[i].speed * GetFrameTime(); // Move forward
-				recalculateBounds(&bulletPool[i], bulletBounds); // Recalculate bullet bounding box
+				moveEntity(&bulletPool[i], bulletPool[i].position.x, bulletPool[i].position.y, 
+							bulletPool[i].position.z + bulletPool[i].speed * GetFrameTime());
 				if (bulletPool[i].position.z >= frontZLimit) bulletPool[i].active = false; // Deactivate bullet if outside designed limits
-			}
-			//TraceLog(LOG_DEBUG, "bullet[0] Z = %.2f", bullet[0].position.z);
+			
+				for (int j = 0; j < maxEnemies; j++) // Test this bullet with the rest of bullets. TODO SHITTY PERFORMANCE
+				{
+					if (enemyPool[j].active)
+					{
+						/// Bullet collision detection. Only if enemy is active (we don't want to collide with invisible enemies...)
+						if (CheckCollisionBoxes(enemyPool[j].bounds, bulletPool[i].bounds))
+						{
+							// If bullet collides with enemy, mutual deactivation
+							bulletPool[i].active = false;
+							enemyPool[j].active = false;
+						}
+					}
+				}
 
-			// Bullet collision detection. Only if enemy is active (we don't want to collide with invisible enemies...)
-			if (CheckCollisionBoxes(enemy.bounds, bulletPool[i].bounds) && enemy.active)
-			{
-				// If bullet collides with enemy, mutual deactivation
-				bulletPool[i].active = false;
-				enemy.active = false;
 			}
 		}
 
+		if (timerEnemy >= enemySpawnPeriod) // Spawn enemy if enough time passed already
+		{
+			// Spawn Enemy
+			// Iterates through bullet pool until available bullet is found, or until end.
+			int i = 0;
+			bool foundEnemy = false;
+			while (!foundEnemy && i < maxEnemies)
+			{
+				// enemy not active =  available enemy
+				if (!enemyPool[i].active)
+				{
+					enemyPool[i].active = true; // Mark enenmy as used (render & interactive)
+
+					moveEntity(&enemyPool[i], GetRandomValue(rightXLimit, leftXLimit), yPos, enemySpawnZ); // Enemy position randomly detected
+
+					// Try to figure if the given position is valid.
+					// TODO SHITTY PERFORMANCE
+					int j = 0;
+					while (j < maxEnemies)
+					{
+						if (j != i && enemyPool[j].active) // Test new enemy with every other enemy
+						{
+							if (CheckCollisionBoxes(enemyPool[j].bounds, enemyPool[i].bounds)) // Collision with other enemy
+							{
+								moveEntity(&enemyPool[i], GetRandomValue(rightXLimit, leftXLimit), yPos, enemySpawnZ); // If collides, generate new position
+								j = 0; // Restart loop
+							} else {
+								j++;
+							}
+						} else {
+							j++;
+						}
+						
+					}
+					
+					foundEnemy = true; // Stop pool search
+				}
+
+				i++;
+			}
+
+			timerEnemy = 0.0f; // Restart timer
+		}
+		
 		//----------------------------------------------------------------------------------
 
 		// Draw
@@ -158,30 +208,13 @@ int main()
 				DrawGrid(100, 1.0f); // Static scenario
 				
 				// Draw player + border + shadow
-				DrawModel(*player.model, player.position, 1.0f, player.tint);
-				DrawModelWires(*player.model, player.position, 1.0f, player.border);
-				DrawModel(*player.model, Vector3Add(player.position, player.shadowOffset), 1.0f, player.shadow);
-				//DrawBoundingBox(player.bounds, YELLOW); //DEBUG
+				drawEntity(&player);
 
 				// Draw all active bullets
-				for (int i = 0; i < maxBullets; i++)
-				{
-					if (bulletPool[i].active){
-						// Draw bullet + border + shadow
-						DrawModel(*bulletPool[i].model, bulletPool[i].position, 0.5f, bulletPool[i].tint);
-						DrawModelWires(*bulletPool[i].model, bulletPool[i].position, 1.0f, bulletPool[i].border);
-						DrawModel(*bulletPool[i].model, Vector3Add(bulletPool[i].position, bulletPool[i].shadowOffset), 0.5f, bulletPool[i].shadow);
-						//DrawBoundingBox(bulletPool[i].bounds, YELLOW); //DEBUG
-					}
-				}
+				drawEntityPool(bulletPool, maxBullets);
 
-				// Draw active enemy + border + shadow
-				if (enemy.active){
-					DrawModel(*enemy.model, enemy.position, 1.2f, enemy.tint);
-					DrawModelWires(*enemy.model, enemy.position, 1.2f, enemy.border);
-					DrawModel(*enemy.model, Vector3Add(enemy.position, enemy.shadowOffset), 1.0f, enemy.shadow);
-					//DrawBoundingBox(enemy.bounds, YELLOW); //DEBUG
-				}
+				// Draw all active enemies
+				drawEntityPool(enemyPool, maxEnemies);
 			}
 			EndMode3D();
 
