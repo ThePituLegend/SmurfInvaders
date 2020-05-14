@@ -7,7 +7,7 @@ Smurf Invaders. Technical Demo as an explorative project of Raylib. Random game 
 I've stumbled upon [Raylib](https://github.com/raysan5/raylib) some days ago, and it looked amazing. Easy to use, and very powerful.
 So, now in lockdown, I started developing this game as a simple demo to explore the capabilities of the library.
 
-This is a work in progress, without any clear definite route whatsoever. 
+This is a work in progress, without any clear definite route whatsoever.
 However, I'm trying to do most of the progress on streaming, so check out my [Twitch channel](https://www.twitch.tv/thepitulegend) if you're interested (I'll stream in spanish tho, unless many english-speaking users enter the stream at some point).
 
 ## What's done right now
@@ -16,13 +16,12 @@ However, I'm trying to do most of the progress on streaming, so check out my [Tw
 * Player model and movement
 * Shootable and functional bullets
 * Enemy pooling (same system as the bullets, probably)
-* Static enemies
+* Moving enemies (basic)
 
 ## TODO list
 
-* Serious performance issues with bullet/enemy collision. #1 priority.
-* Enemy behaviour
-* Damageable player
+* Enemy behaviour (shooting + better movement)
+* Damageable player + enemy / player // bullet / player collisions
 * HUD (Life + Score. I'll decide later how life managing will work)
 * Dynamic scenario
 * Music

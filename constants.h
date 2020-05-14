@@ -26,11 +26,14 @@ const static int maxEnemies = 10;
 const static float leftXLimit = 6.0f;
 const static float rightXLimit = -6.0f;
 const static float frontZLimit = 45.0f;
+const static float backZLimit = -5.0f;
 
 const static float yPos = 0.3f;
 
-const static float enemySpawnPeriod = 4.0f;
+const static float enemySpawnPeriod = 2.0f;
 const static float enemySpawnZ = 25.0f;
+
+const static float physicsPeriod = 0.03f;
 
 const static struct
 {

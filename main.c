@@ -44,6 +44,9 @@ int main()
 	// Timer to control enemy spawn rate
 	float timerEnemy = 0.0f;
 
+	// "Physics" timer
+	float timerPhysics = 0.0f;
+
 	Camera camera;
 
 	SetTraceLogLevel(LOG_ALL); // This allows us to print info onto the terminal
@@ -80,7 +83,7 @@ int main()
 
 	initEntityPool(bulletPool, maxBullets, &bulletModel, &bulletBounds, GREEN, BLACK, (Vector3){0.0f, yPos, 2.5f}, 10.0f, 0.5f);
 
-	initEntityPool(enemyPool, maxEnemies, &enemyModel, &enemyBounds, BLACK, PURPLE, (Vector3){0.0f, yPos, 8.0f}, 0.0f, 1.2f);
+	initEntityPool(enemyPool, maxEnemies, &enemyModel, &enemyBounds, BLACK, PURPLE, (Vector3){0.0f, yPos, 8.0f}, 10.0f, 1.2f);
 	
 	SetTargetFPS(60); // Set our game to run at 60 frames-per-second
 	//--------------------------------------------------------------------------------------
@@ -93,6 +96,7 @@ int main()
 
 		// Timers control. Increment timer with time elapsed since last frame.
 		timerEnemy += GetFrameTime(); 
+		timerPhysics += GetFrameTime(); 
 
 		UpdateCamera(&camera); // Update camera (I think this is unnecessary in this case. TODO test this hypothesis)
 
@@ -125,32 +129,57 @@ int main()
 			}
 		}
 
-		// Iterates through bullet pool to apply necessary changes
-		for (int i = 0; i < maxBullets; i++)
+		if (timerPhysics >= physicsPeriod)
 		{
-			// If active, move
-			if (bulletPool[i].active){
-				moveEntity(&bulletPool[i], bulletPool[i].position.x, bulletPool[i].position.y, 
-							bulletPool[i].position.z + bulletPool[i].speed * GetFrameTime());
-				if (bulletPool[i].position.z >= frontZLimit) bulletPool[i].active = false; // Deactivate bullet if outside designed limits
-			
-				for (int j = 0; j < maxEnemies; j++) // Test this bullet with the rest of bullets. TODO SHITTY PERFORMANCE
-				{
-					if (enemyPool[j].active)
+			// Iterates through bullet pool to apply necessary changes
+			for (int i = 0; i < maxBullets; i++)
+			{
+				int minJ = 0;
+				// If active, move
+				if (bulletPool[i].active){
+					moveEntity(&bulletPool[i], bulletPool[i].position.x, bulletPool[i].position.y, 
+								bulletPool[i].position.z + bulletPool[i].speed * timerPhysics);
+					if (bulletPool[i].position.z >= frontZLimit) bulletPool[i].active = false; // Deactivate bullet if outside designed limits
+				
+					float minDist = 999.0f;
+					for (int j = 0; j < maxEnemies; j++)
 					{
-						/// Bullet collision detection. Only if enemy is active (we don't want to collide with invisible enemies...)
-						if (CheckCollisionBoxes(enemyPool[j].bounds, bulletPool[i].bounds))
+						if (enemyPool[j].active)
 						{
-							// If bullet collides with enemy, mutual deactivation
-							bulletPool[i].active = false;
-							enemyPool[j].active = false;
+							float dist = Vector3Distance(enemyPool[j].position, bulletPool[i].position);
+							if (dist < minDist)
+							{
+								minJ = j;
+								minDist = dist;
+							}
 						}
 					}
 				}
 
+				/// Bullet collision detection. Only if enemy is active (we don't want to collide with invisible enemies...)
+				if (CheckCollisionBoxes(enemyPool[minJ].bounds, bulletPool[i].bounds))
+				{
+					// If bullet collides with enemy, mutual deactivation
+					bulletPool[i].active = false;
+					enemyPool[minJ].active = false;
+				}
 			}
-		}
 
+			// Iterates through enemy pool to apply necessary changes
+			for (int i = 0; i < maxEnemies; i++)
+			{
+				// If active, move
+				if (enemyPool[i].active){
+					moveEntity(&enemyPool[i], enemyPool[i].position.x, enemyPool[i].position.y, 
+								enemyPool[i].position.z - enemyPool[i].speed * timerPhysics);
+					if (enemyPool[i].position.z <= backZLimit) enemyPool[i].active = false; // Deactivate enemy if outside designed limits
+				}
+
+			}
+
+			timerPhysics = 0.0f; // Restart timer
+		}
+		
 		if (timerEnemy >= enemySpawnPeriod) // Spawn enemy if enough time passed already
 		{
 			// Spawn Enemy
@@ -164,27 +193,8 @@ int main()
 				{
 					enemyPool[i].active = true; // Mark enenmy as used (render & interactive)
 
-					moveEntity(&enemyPool[i], GetRandomValue(rightXLimit, leftXLimit), yPos, enemySpawnZ); // Enemy position randomly detected
-
-					// Try to figure if the given position is valid.
-					// TODO SHITTY PERFORMANCE
-					int j = 0;
-					while (j < maxEnemies)
-					{
-						if (j != i && enemyPool[j].active) // Test new enemy with every other enemy
-						{
-							if (CheckCollisionBoxes(enemyPool[j].bounds, enemyPool[i].bounds)) // Collision with other enemy
-							{
-								moveEntity(&enemyPool[i], GetRandomValue(rightXLimit, leftXLimit), yPos, enemySpawnZ); // If collides, generate new position
-								j = 0; // Restart loop
-							} else {
-								j++;
-							}
-						} else {
-							j++;
-						}
-						
-					}
+					// Position enemy in empty space
+					moveEntity(&enemyPool[i], GetRandomValue(rightXLimit, leftXLimit), yPos, enemySpawnZ);
 					
 					foundEnemy = true; // Stop pool search
 				}
@@ -201,7 +211,7 @@ int main()
 		//----------------------------------------------------------------------------------
 		BeginDrawing();
 		{
-			ClearBackground(RAYWHITE); // Clear backgrounf
+			ClearBackground(RAYWHITE); // Clear background
 
 			BeginMode3D(camera);
 			{
