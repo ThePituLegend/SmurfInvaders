@@ -13,7 +13,7 @@
 #include "entity.h"
 
 void initEntity(Entity* entity, Model* model, BoundingBox* bounds, Color tint,
-				Color border, Vector3 position, float speed, float scale, bool active){
+				Color border, Vector3 position, float speed, float scale, int score, bool active){
 	
 	// Inits the entity struct, element by element
 	entity->model = model;
@@ -24,19 +24,20 @@ void initEntity(Entity* entity, Model* model, BoundingBox* bounds, Color tint,
 	entity->speed = speed;
 	entity->scale = scale;
 	entity->active = active;
+	entity->score = score;
 
 	moveEntityVect(entity, position);
 }
 
 void initEntityPool(Entity* pool, int size, Model* model, BoundingBox* bounds, Color tint,
-				Color border, Vector3 position, float speed, float scale){
+				Color border, Vector3 position, float speed, float scale, int score){
 	
 	// Iterates through the given entity array
 	for (int i = 0; i < size; i++)
 	{
 		// Inits each entity
 		initEntity(&pool[i], model, bounds, tint, border, 
-			position, speed, scale, false);
+			position, speed, scale, score, false);
 	}
 }
 

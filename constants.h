@@ -15,6 +15,8 @@
 
 #include "raylib.h"
 
+const static int TEXTSIZE = 256;
+
 // Game Constants
 
 const static int screenWidth = 800;
@@ -35,10 +37,16 @@ const static float enemySpawnZ = 25.0f;
 
 const static float physicsPeriod = 0.03f;
 
+const static int maxHealth = 3;
+const static int baseEnemyScore = 100;
+
 const static struct
 {
 	Vector3 offset; // Shadow is drawn as the model offsetted
 	Color color; // Shadow color
 } defaultShadow = {{0.2f, -yPos, 0.0f}, { 0.0f, 0.0f, 0.0f, 100.0f }};
+
+// HUD Constants
+const static char title[] = "Smurf Invaders: Technical Demo\0";
 
 #endif

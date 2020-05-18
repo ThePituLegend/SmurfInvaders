@@ -36,6 +36,7 @@ typedef struct Entity
 	Color border; // Border color
 	float speed; // Entity speed
 	float scale; // Entity Scaling
+	int score; // How many points the entity gives when killed
 	bool active; // This determines whether the entity is interactible and drawn
 } Entity;
 
@@ -46,11 +47,11 @@ typedef Entity Enemy;
 
 // Initializes an entity with the given parameters
 void initEntity(Entity* entity, Model* model, BoundingBox* bounds, Color tint,
-				Color border, Vector3 position, float speed, float scale, bool active);
+				Color border, Vector3 position, float speed, float scale, int score, bool active);
 
 // Initializes a pool (array) of entities with the given parameters. Items of the pool are disabled by default
 void initEntityPool(Entity* pool, int size, Model* model, BoundingBox* bounds, Color tint,
-				Color border, Vector3 position, float speed, float scale);
+				Color border, Vector3 position, float speed, float scale, int score);
 
 // Recalculate the collision box for a given entity, given a reference box of that entity
 void recalculateBounds(Entity* entity, BoundingBox referenceBox);

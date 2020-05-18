@@ -29,6 +29,9 @@ int main()
 	Model playerModel;
 	BoundingBox playerBounds;
 
+	int score = 0;
+	int health = maxHealth;
+
 	// Bullet related variables
 	Bullet bulletPool[maxBullets];
 	Mesh bulletMesh;
@@ -47,11 +50,15 @@ int main()
 	// "Physics" timer
 	float timerPhysics = 0.0f;
 
+	// HUD texts
+	char scoreDisp[TEXTSIZE];
+	char healthDisp[TEXTSIZE];
+
 	Camera camera;
 
 	SetTraceLogLevel(LOG_ALL); // This allows us to print info onto the terminal
 
-	InitWindow(screenWidth, screenHeight, "Smurf Invaders"); // Creates the screen
+	InitWindow(screenWidth, screenHeight, title); // Creates the screen
 
 	// Camera configuration
 	// TODO Make this configurations constants
@@ -79,11 +86,18 @@ int main()
 	enemyBounds = MeshBoundingBox(enemyMesh);
 
 	// Initialization of entities
-	initEntity(&player, &playerModel, &playerBounds, BLUE, BLACK, (Vector3){0.0f, yPos, 0.0f}, 10.0f, 1.0f, true);
+	initEntity(&player, &playerModel, &playerBounds, BLUE, BLACK, 
+				(Vector3){0.0f, yPos, 0.0f}, 10.0f, 1.0f, 0, true);
 
-	initEntityPool(bulletPool, maxBullets, &bulletModel, &bulletBounds, GREEN, BLACK, (Vector3){0.0f, yPos, 2.5f}, 10.0f, 0.5f);
+	initEntityPool(bulletPool, maxBullets, &bulletModel, &bulletBounds, GREEN, BLACK,
+				 (Vector3){0.0f, yPos, 2.5f}, 10.0f, 0.5f, 0);
 
-	initEntityPool(enemyPool, maxEnemies, &enemyModel, &enemyBounds, BLACK, PURPLE, (Vector3){0.0f, yPos, 8.0f}, 10.0f, 1.2f);
+	initEntityPool(enemyPool, maxEnemies, &enemyModel, &enemyBounds, BLACK, PURPLE,
+				 (Vector3){0.0f, yPos, 8.0f}, 10.0f, 1.2f, baseEnemyScore);
+
+	// Initaize HUD displays
+	TextCopy(healthDisp, TextFormat("LIVES: %d", health));
+	TextCopy(scoreDisp, TextFormat("SCORE: %d", score));
 	
 	SetTargetFPS(60); // Set our game to run at 60 frames-per-second
 	//--------------------------------------------------------------------------------------
@@ -146,7 +160,7 @@ int main()
 					{
 						if (enemyPool[j].active)
 						{
-							float dist = Vector3Distance(enemyPool[j].position, bulletPool[i].position);
+							float dist = Vector3LengthSqr(Vector3Subtract(enemyPool[j].position, bulletPool[i].position));
 							if (dist < minDist)
 							{
 								minJ = j;
@@ -154,14 +168,17 @@ int main()
 							}
 						}
 					}
-				}
 
-				/// Bullet collision detection. Only if enemy is active (we don't want to collide with invisible enemies...)
-				if (CheckCollisionBoxes(enemyPool[minJ].bounds, bulletPool[i].bounds))
-				{
-					// If bullet collides with enemy, mutual deactivation
-					bulletPool[i].active = false;
-					enemyPool[minJ].active = false;
+					/// Bullet collision detection. Only if enemy is active (we don't want to collide with invisible enemies...)
+					if (CheckCollisionBoxes(enemyPool[minJ].bounds, bulletPool[i].bounds))
+					{
+						// If bullet collides with enemy, mutual deactivation
+						bulletPool[i].active = false;
+						enemyPool[minJ].active = false;
+
+						score += enemyPool[minJ].score;
+						TextCopy(scoreDisp, TextFormat("SCORE: %d", score));
+					}
 				}
 			}
 
@@ -230,7 +247,9 @@ int main()
 
 			// HUD drawing
 			// TODO proper HUD
-			DrawText("Smurf Invaders: Technical Demo", 10, 40, 20, DARKGREEN);
+			DrawText(title, 10, 40, 20, DARKGREEN);
+			DrawText(healthDisp, screenWidth - MeasureText(healthDisp, 20) - 10, 10, 20, DARKGREEN);
+			DrawText(scoreDisp, screenWidth - MeasureText(scoreDisp, 20) - 10, 30, 20, DARKGREEN);
 
 			DrawFPS(10, 10);
 		}
