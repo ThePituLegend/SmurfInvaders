@@ -78,3 +78,22 @@ void drawEntityPool(Entity* pool, int size){
 			}
 		}
 }
+
+int getEntityFromPool(Entity* pool, int size){
+	int i = 0;
+	
+	while (i < size)
+	{
+		// Entity not active =  available entity
+		if (!pool[i].active)
+		{
+			pool[i].active = true; // Mark entity as used (render & interactive)
+
+			return i;
+		}
+
+		i++; // Thx my pana Dubledoh!
+	}
+
+	return -1;
+}

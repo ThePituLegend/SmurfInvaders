@@ -18,6 +18,8 @@
 #include "constants.h"
 #include "entity.h"
 
+void physicsLoop();
+
 int main()
 {
 	// Initialization
@@ -33,7 +35,8 @@ int main()
 	int health = maxHealth;
 
 	// Bullet related variables
-	Bullet bulletPool[maxBullets];
+	Bullet bulletPlayerPool[maxBullets];
+	Bullet bulletEnemyPool[maxBullets];
 	Mesh bulletMesh;
 	Model bulletModel;
 	BoundingBox bulletBounds;
@@ -49,6 +52,9 @@ int main()
 
 	// "Physics" timer
 	float timerPhysics = 0.0f;
+
+	// Enemy fire rate timer
+	float timerFire = 0.0f;
 
 	// HUD texts
 	char scoreDisp[TEXTSIZE];
@@ -87,13 +93,15 @@ int main()
 
 	// Initialization of entities
 	initEntity(&player, &playerModel, &playerBounds, BLUE, BLACK, 
-				(Vector3){0.0f, yPos, 0.0f}, 10.0f, 1.0f, 0, true);
+				(Vector3){0.0f, yPos, 0.0f}, basePlayerSpeed, 1.0f, 0, true);
 
-	initEntityPool(bulletPool, maxBullets, &bulletModel, &bulletBounds, GREEN, BLACK,
-				 (Vector3){0.0f, yPos, 2.5f}, 10.0f, 0.5f, 0);
+	initEntityPool(bulletPlayerPool, maxBullets, &bulletModel, &bulletBounds, GREEN, BLACK,
+				 (Vector3){0.0f, yPos, 2.5f}, baseBulletPlayerSpeed, 0.5f, baseEnemyScore);
+	initEntityPool(bulletEnemyPool, maxBullets, &bulletModel, &bulletBounds, DARKGREEN, BLACK,
+				 (Vector3){0.0f, yPos, 2.5f}, baseBulletEnemySpeed, 0.5f, -100);
 
 	initEntityPool(enemyPool, maxEnemies, &enemyModel, &enemyBounds, BLACK, PURPLE,
-				 (Vector3){0.0f, yPos, 8.0f}, 10.0f, 1.2f, baseEnemyScore);
+				 (Vector3){0.0f, yPos, 8.0f}, baseEnemySpeed, 1.2f, -150);
 
 	// Initaize HUD displays
 	TextCopy(healthDisp, TextFormat("LIVES: %d", health));
@@ -103,14 +111,15 @@ int main()
 	//--------------------------------------------------------------------------------------
 
 	// Main game loop
-	while (!WindowShouldClose()) // Detect window close button or ESC key
+	while (!WindowShouldClose() && health >  0) // Detect window close button or ESC key. Dummy exit on player killed
 	{
 		// Update
 		//----------------------------------------------------------------------------------
 
 		// Timers control. Increment timer with time elapsed since last frame.
 		timerEnemy += GetFrameTime(); 
-		timerPhysics += GetFrameTime(); 
+		timerPhysics += GetFrameTime();
+		timerFire += GetFrameTime();
 
 		UpdateCamera(&camera); // Update camera (I think this is unnecessary in this case. TODO test this hypothesis)
 
@@ -124,75 +133,14 @@ int main()
 		// Bullet shooting
 		if (IsKeyReleased(KEY_SPACE))
 		{
-			// Iterates through bullet pool until available bullet is found, or until end.
-			int i = 0;
-			bool foundBullet = false;
-			while (!foundBullet && i < maxBullets)
-			{
-				// bullet not active =  available bullet
-				if (!bulletPool[i].active)
-				{
-					bulletPool[i].active = true; // Mark bullet as used (render & interactive)
-
-					moveEntity(&bulletPool[i], player.position.x, yPos, 2.5f);
-					
-					foundBullet = true; // Stop pool search
-				}
-
-				i++; // Thx my pana Dubledoh!
-			}
+			int i = getEntityFromPool(bulletPlayerPool, maxBullets);
+		
+			moveEntity(&bulletPlayerPool[i], player.position.x, yPos, 2.5f);
 		}
 
 		if (timerPhysics >= physicsPeriod)
 		{
-			// Iterates through bullet pool to apply necessary changes
-			for (int i = 0; i < maxBullets; i++)
-			{
-				int minJ = 0;
-				// If active, move
-				if (bulletPool[i].active){
-					moveEntity(&bulletPool[i], bulletPool[i].position.x, bulletPool[i].position.y, 
-								bulletPool[i].position.z + bulletPool[i].speed * timerPhysics);
-					if (bulletPool[i].position.z >= frontZLimit) bulletPool[i].active = false; // Deactivate bullet if outside designed limits
-				
-					float minDist = 999.0f;
-					for (int j = 0; j < maxEnemies; j++)
-					{
-						if (enemyPool[j].active)
-						{
-							float dist = Vector3LengthSqr(Vector3Subtract(enemyPool[j].position, bulletPool[i].position));
-							if (dist < minDist)
-							{
-								minJ = j;
-								minDist = dist;
-							}
-						}
-					}
-
-					/// Bullet collision detection. Only if enemy is active (we don't want to collide with invisible enemies...)
-					if (CheckCollisionBoxes(enemyPool[minJ].bounds, bulletPool[i].bounds))
-					{
-						// If bullet collides with enemy, mutual deactivation
-						bulletPool[i].active = false;
-						enemyPool[minJ].active = false;
-
-						score += enemyPool[minJ].score;
-						TextCopy(scoreDisp, TextFormat("SCORE: %d", score));
-					}
-				}
-			}
-
-			// Iterates through enemy pool to apply necessary changes
-			for (int i = 0; i < maxEnemies; i++)
-			{
-				// If active, move
-				if (enemyPool[i].active){
-					moveEntity(&enemyPool[i], enemyPool[i].position.x, enemyPool[i].position.y, 
-								enemyPool[i].position.z - enemyPool[i].speed * timerPhysics);
-					if (enemyPool[i].position.z <= backZLimit) enemyPool[i].active = false; // Deactivate enemy if outside designed limits
-				}
-
-			}
+			physicsLoop();
 
 			timerPhysics = 0.0f; // Restart timer
 		}
@@ -200,26 +148,35 @@ int main()
 		if (timerEnemy >= enemySpawnPeriod) // Spawn enemy if enough time passed already
 		{
 			// Spawn Enemy
-			// Iterates through bullet pool until available bullet is found, or until end.
-			int i = 0;
-			bool foundEnemy = false;
-			while (!foundEnemy && i < maxEnemies)
-			{
-				// enemy not active =  available enemy
-				if (!enemyPool[i].active)
-				{
-					enemyPool[i].active = true; // Mark enenmy as used (render & interactive)
+			int i = getEntityFromPool(enemyPool, maxEnemies);
 
-					// Position enemy in empty space
-					moveEntity(&enemyPool[i], GetRandomValue(rightXLimit, leftXLimit), yPos, enemySpawnZ);
+			moveEntity(&enemyPool[i], GetRandomValue(rightXLimit, leftXLimit), yPos, enemySpawnZ);
+
+			enemyPool[i].speed = baseEnemySpeed + GetRandomValue(-speedVariability, +speedVariability);
 					
-					foundEnemy = true; // Stop pool search
-				}
-
-				i++;
-			}
-
 			timerEnemy = 0.0f; // Restart timer
+		}
+
+		if (timerFire >= firePeriod){
+
+			// Spawn enemy bullets
+			int i;
+			for (i = 0; i < maxEnemies; i++)
+			{
+				if (enemyPool[i].active){
+					bool shooting = GetRandomValue(0, 100) <= fireProbability;
+
+					if (shooting){
+						int j = getEntityFromPool(bulletEnemyPool, maxBullets);
+
+						moveEntity(&bulletEnemyPool[j], enemyPool[i].position.x, yPos, enemyPool[i].position.z - 1.0f);
+
+						bulletEnemyPool[j].speed = baseBulletEnemySpeed + GetRandomValue(0, 2 * speedVariability);
+					}
+				}
+			}
+			
+			timerFire = 0.0f; // Restart timer
 		}
 		
 		//----------------------------------------------------------------------------------
@@ -232,13 +189,14 @@ int main()
 
 			BeginMode3D(camera);
 			{
-				DrawGrid(100, 1.0f); // Static scenario
+				DrawGrid(200, 1.0f); // Static scenario
 				
 				// Draw player + border + shadow
 				drawEntity(&player);
 
 				// Draw all active bullets
-				drawEntityPool(bulletPool, maxBullets);
+				drawEntityPool(bulletPlayerPool, maxBullets);
+				drawEntityPool(bulletEnemyPool, maxBullets);
 
 				// Draw all active enemies
 				drawEntityPool(enemyPool, maxEnemies);
@@ -273,4 +231,113 @@ int main()
 	//--------------------------------------------------------------------------------------
 
 	return 0;
+}
+
+void physicsLoop(){
+	int minI = 0;
+	float minDist = 999.0f;
+	// Iterates through bullet pool to apply necessary changes
+	for (int i = 0; i < maxBullets; i++)
+	{
+		int minJ = 0;
+		// If active, move
+		if (bulletPlayerPool[i].active){
+			moveEntity(&bulletPlayerPool[i], bulletPlayerPool[i].position.x, bulletPlayerPool[i].position.y, 
+						bulletPlayerPool[i].position.z + bulletPlayerPool[i].speed * timerPhysics);
+			if (bulletPlayerPool[i].position.z >= frontZLimit) bulletPlayerPool[i].active = false; // Deactivate bullet if outside designed limits
+		
+			for (int j = 0; j < maxEnemies; j++)
+			{
+				if (enemyPool[j].active)
+				{
+					float dist = Vector3LengthSqr(Vector3Subtract(enemyPool[j].position, bulletPlayerPool[i].position));
+					if (dist < minDist)
+					{
+						minJ = j;
+						minDist = dist;
+					}
+				}
+			}
+
+			/// Bullet collision detection. Only if enemy is active (we don't want to collide with invisible enemies...)
+			if (CheckCollisionBoxes(enemyPool[minJ].bounds, bulletPlayerPool[i].bounds))
+			{
+				// If bullet collides with enemy, mutual deactivation
+				bulletPlayerPool[i].active = false;
+				enemyPool[minJ].active = false;
+
+				score += bulletPlayerPool[i].score;
+				TextCopy(scoreDisp, TextFormat("SCORE: %d", score));
+			}
+		}
+	}
+
+	// Iterates through enemy pool to apply necessary changes
+	for (int i = 0; i < maxEnemies; i++)
+	{
+
+		// If active, move
+		if (enemyPool[i].active){
+			moveEntity(&enemyPool[i], enemyPool[i].position.x, enemyPool[i].position.y, 
+						enemyPool[i].position.z + enemyPool[i].speed * timerPhysics);
+			if (enemyPool[i].position.z <= backZLimit) enemyPool[i].active = false; // Deactivate enemy if outside designed limits
+		
+			if (player.active){
+				
+				float dist = Vector3LengthSqr(Vector3Subtract(enemyPool[i].position, player.position));
+				if (dist < minDist)
+				{
+					minI = i;
+					minDist = dist;
+				}
+			}
+		}
+
+		/// Bullet collision detection. Only if enemy is active (we don't want to collide with invisible enemies...)
+		if (enemyPool[minI].active && CheckCollisionBoxes(enemyPool[minI].bounds, player.bounds))
+		{
+			// If bullet collides with enemy, mutual deactivation
+			enemyPool[minI].active = false;
+			//player.active = false;
+
+			score += enemyPool[minI].score;
+			health--;
+			TextCopy(scoreDisp, TextFormat("SCORE: %d", score));
+			TextCopy(healthDisp, TextFormat("LIVES: %d", health));
+		}
+
+	}
+	// Iterates through bullet pool to apply necessary changes
+	for (int i = 0; i < maxBullets; i++)
+	{
+		// If active, move
+		if (bulletEnemyPool[i].active){
+			moveEntity(&bulletEnemyPool[i], bulletEnemyPool[i].position.x, bulletEnemyPool[i].position.y, 
+						bulletEnemyPool[i].position.z + bulletEnemyPool[i].speed * timerPhysics);
+			if (bulletEnemyPool[i].position.z <= backZLimit) bulletEnemyPool[i].active = false; // Deactivate bullet if outside designed limits
+		
+			if (player.active){
+				
+				float dist = Vector3LengthSqr(Vector3Subtract(bulletEnemyPool[i].position, player.position));
+				if (dist < minDist)
+				{
+					minI = i;
+					minDist = dist;
+				}
+			}
+		}
+	}
+
+	// Bullet collision detection. Only if enemy is active (we don't want to collide with invisible enemies...)
+	if (bulletEnemyPool[minI].active && CheckCollisionBoxes(bulletEnemyPool[minI].bounds, player.bounds))
+	{
+		// If bullet collides with enemy, mutual deactivation
+		bulletEnemyPool[minI].active = false;
+		//player.active = false;
+
+		score += bulletEnemyPool[minI].score;
+		health--;
+		TextCopy(scoreDisp, TextFormat("SCORE: %d", score));
+		TextCopy(healthDisp, TextFormat("LIVES: %d", health));
+	}
 }

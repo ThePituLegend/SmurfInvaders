@@ -22,18 +22,26 @@ const static int TEXTSIZE = 256;
 const static int screenWidth = 800;
 const static int screenHeight = 600;
 
-const static int maxBullets = 10;
-const static int maxEnemies = 10;
+const static int maxBullets = 15;
+const static int maxEnemies = 15;
 
 const static float leftXLimit = 6.0f;
 const static float rightXLimit = -6.0f;
-const static float frontZLimit = 45.0f;
+const static float frontZLimit = 60.0f;
 const static float backZLimit = -5.0f;
 
 const static float yPos = 0.3f;
+const static float speedVariability = 2.0f;
+
+const static float basePlayerSpeed = 10.0f;
+const static float baseBulletPlayerSpeed = 15.0f;
+const static float baseBulletEnemySpeed = -15.0f;
 
 const static float enemySpawnPeriod = 2.0f;
-const static float enemySpawnZ = 25.0f;
+const static float enemySpawnZ = 100.0f;
+const static int fireProbability = 50;
+const static float firePeriod = 1.5f;
+const static float baseEnemySpeed = -10.0f;
 
 const static float physicsPeriod = 0.03f;
 

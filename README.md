@@ -18,11 +18,14 @@ However, I'm trying to do most of the progress on streaming, so check out my [Tw
 * Enemy pooling (same system as the bullets, probably)
 * Moving enemies (basic)
 * HUD (Life + Score)
+* Enemy behaviour: shooting
+* Damageable player + enemy / player // bullet / player collisions. Also update life
+* Enemy speed variability
+* Enemy bullets speed variability
+* Dummy exit on player killed
 
 ## TODO list
 
-* Enemy behaviour (shooting + better movement)
-* Damageable player + enemy / player // bullet / player collisions. Also update life
 * "Phase-out" effect on hit
 * Dynamic scenario
 * Music

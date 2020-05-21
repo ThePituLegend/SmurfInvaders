@@ -1,4 +1,4 @@
-main.exe
+*.exe
 main.code-workspace
 Makefile.Android
 .vscode/*

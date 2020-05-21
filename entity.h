@@ -64,4 +64,7 @@ void moveEntityVect(Entity* entity, Vector3 newPos);
 void drawEntity(Entity* entity);
 void drawEntityPool(Entity* pool, int size);
 
+// Pooling. Returns 1st free item from pool, -1 if none.
+int getEntityFromPool(Entity* pool, int size);
+
 #endif
