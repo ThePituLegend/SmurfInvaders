@@ -22,11 +22,8 @@ However, I'm trying to do most of the progress on streaming, so check out my [Tw
 * Damageable player + enemy / player // bullet / player collisions. Also update life
 * Enemy speed variability
 * Enemy bullets speed variability
-* Dummy exit on player killed
-
-## Work In Progress
-
-* Menus
+* Functional menus
+* Pause screen
 
 ## TODO list
 

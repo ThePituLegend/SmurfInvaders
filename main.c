@@ -15,6 +15,7 @@
 
 #include "game.h"
 #include "mainMenu.h"
+#include "gameOverMenu.h"
 
 int main()
 {
@@ -45,6 +46,7 @@ int main()
 			break;
 
 		case GO_M:
+			gameState = gameOverMenu();
 			break;
 		}
 

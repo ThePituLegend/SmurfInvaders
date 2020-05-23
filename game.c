@@ -52,6 +52,9 @@ State gameCore()
 	char scoreDisp[TEXTSIZE];
 	char healthDisp[TEXTSIZE];
 
+	bool isPaused = false;
+	State gameState = GAME;
+
 	Camera camera;
 
 	// Camera configuration
@@ -94,36 +97,48 @@ State gameCore()
 	// Initaize HUD displays
 	TextCopy(healthDisp, TextFormat("LIVES: %d", health));
 	TextCopy(scoreDisp, TextFormat("SCORE: %d", score));
+
+
+	SetExitKey(KEY_PAUSE);
 	
 	//--------------------------------------------------------------------------------------
 
 	// Main game loop
-	while (!WindowShouldClose() && health >  0) // Detect window close button or ESC key. Dummy exit on player killed
+	while (gameState == GAME)
 	{
 		// Update
 		//----------------------------------------------------------------------------------
 
-		// Timers control. Increment timer with time elapsed since last frame.
-		timerEnemy += GetFrameTime(); 
-		timerPhysics += GetFrameTime();
-		timerFire += GetFrameTime();
-
-		UpdateCamera(&camera); // Update camera (I think this is unnecessary in this case. TODO test this hypothesis)
-
-		// Get player input to move player entity.
-		// speed * frameTime = framerate-independant movement
-		player.position.x += player.speed * IsKeyDown(KEY_A) * GetFrameTime();
-		player.position.x -= player.speed * IsKeyDown(KEY_D) * GetFrameTime();
-		moveEntity(&player, Clamp(player.position.x, rightXLimit, leftXLimit), player.position.y, player.position.z);
-		//TraceLog(LOG_DEBUG, "Player X = %.2f", player.position.x);
-
-		// Bullet shooting
-		if (IsKeyReleased(KEY_SPACE))
-		{
-			int i = getEntityFromPool(bulletPlayerPool, maxBullets);
-		
-			moveEntity(&bulletPlayerPool[i], player.position.x, yPos, 2.5f);
+		if (IsKeyPressed(KEY_ESCAPE)){
+			if (isPaused) gameState = MAIN_M;
+			else isPaused = true;
 		}
+
+		if (IsKeyPressed(KEY_ENTER) && isPaused) isPaused = false;
+		
+
+		if (!isPaused){
+			// Timers control. Increment timer with time elapsed since last frame.
+			timerEnemy += GetFrameTime(); 
+			timerPhysics += GetFrameTime();
+			timerFire += GetFrameTime();
+
+			// Get player input to move player entity.
+			// speed * frameTime = framerate-independant movement
+			player.position.x += player.speed * IsKeyDown(KEY_A) * GetFrameTime();
+			player.position.x -= player.speed * IsKeyDown(KEY_D) * GetFrameTime();
+			moveEntity(&player, Clamp(player.position.x, rightXLimit, leftXLimit), player.position.y, player.position.z);
+			//TraceLog(LOG_DEBUG, "Player X = %.2f", player.position.x);
+
+			// Bullet shooting
+			if (IsKeyReleased(KEY_SPACE))
+			{
+				int i = getEntityFromPool(bulletPlayerPool, maxBullets);
+			
+				moveEntity(&bulletPlayerPool[i], player.position.x, yPos, 2.5f);
+			}
+		}
+		
 
 		if (timerPhysics >= physicsPeriod)
 		{
@@ -270,6 +285,8 @@ State gameCore()
 			
 			timerFire = 0.0f; // Restart timer
 		}
+
+		if (health <= 0) gameState = GO_M;
 		
 		//----------------------------------------------------------------------------------
 
@@ -300,8 +317,15 @@ State gameCore()
 			DrawText(title, 10, 40, 20, DARKGREEN);
 			DrawText(healthDisp, screenWidth - MeasureText(healthDisp, 20) - 10, 10, 20, DARKGREEN);
 			DrawText(scoreDisp, screenWidth - MeasureText(scoreDisp, 20) - 10, 30, 20, DARKGREEN);
-
 			DrawFPS(10, 10);
+
+			if (isPaused){
+				DrawRectangle(0,0,screenWidth,screenHeight,(Color) {0,0,0,100});
+
+				DrawText("PAUSE", screenWidth / 2 - MeasureText("PAUSE", 40) / 2, screenHeight / 2 - 70, 40, GREEN);
+				DrawText("Press ENTER to resume", screenWidth / 2 - MeasureText("Press ENTER to resume", 20) / 2, screenHeight / 2, 20, YELLOW);
+				DrawText("Press ESCAPE to exit", screenWidth / 2 - MeasureText("Press ESCAPE to exit", 20) / 2, screenHeight / 2 + 40, 20, YELLOW);
+			}
 		}
 		EndDrawing();
 		//----------------------------------------------------------------------------------
@@ -320,5 +344,5 @@ State gameCore()
 	UnloadMesh(enemyMesh);
 	//--------------------------------------------------------------------------------------
 
-	return MAIN_M;
+	return gameState;
 }
