@@ -355,7 +355,7 @@ OBJ_DIR = obj
 # Define all object files from source files
 SRC = $(call rwildcard, *.c, *.h)
 #OBJS = $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
-OBJS = main.c entity.c
+OBJS = *.c
 
 # For Android platform we call a custom Makefile.Android
 ifeq ($(PLATFORM),PLATFORM_ANDROID)
@@ -363,7 +363,7 @@ ifeq ($(PLATFORM),PLATFORM_ANDROID)
     export PROJECT_NAME
     export SRC_DIR
 else
-    MAKEFILE_PARAMS = $(PROJECT_NAME)
+    MAKEFILE_PARAMS = main
 endif
 
 # Default target entry
@@ -372,8 +372,8 @@ all:
 	$(MAKE) $(MAKEFILE_PARAMS)
 
 # Project target defined by PROJECT_NAME
-$(PROJECT_NAME): $(OBJS)
-	$(CC) -o $(PROJECT_NAME)$(EXT) $(OBJS) $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
+main: $(OBJS)
+	$(CC) -o main$(EXT) $(OBJS) $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
 
 # Compile source files
 # NOTE: This pattern will compile every module defined on $(OBJS)

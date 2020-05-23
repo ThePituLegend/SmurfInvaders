@@ -24,11 +24,14 @@ However, I'm trying to do most of the progress on streaming, so check out my [Tw
 * Enemy bullets speed variability
 * Dummy exit on player killed
 
+## Work In Progress
+
+* Menus
+
 ## TODO list
 
 * "Phase-out" effect on hit
 * Dynamic scenario
 * Music
 * Sound effects
-* Menus
 * Scoreboard (display + savefile)

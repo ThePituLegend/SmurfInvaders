@@ -17,6 +17,8 @@
 
 const static int TEXTSIZE = 256;
 
+typedef enum {EXIT, MAIN_M, GAME, GO_M} State;
+
 // Game Constants
 
 const static int screenWidth = 800;
