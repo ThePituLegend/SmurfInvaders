@@ -17,7 +17,7 @@
 
 const static int TEXTSIZE = 256;
 
-typedef enum {EXIT, MAIN_M, GAME, GO_M} State;
+typedef enum {EXIT, MAIN_M, SCORE_M, GAME, GO_M} State;
 
 // Game Constants
 
@@ -49,6 +49,8 @@ const static float physicsPeriod = 0.03f;
 
 const static int maxHealth = 3;
 const static int baseEnemyScore = 100;
+
+const static int scoreboardSize = 5;
 
 const static struct
 {

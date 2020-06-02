@@ -10,9 +10,9 @@
 *
 ********************************************************************************************/
 
-#include "mainMenu.h"
+#include "scoreMenu.h"
 
-State mainMenu()
+State scoreMenu()
 {
 	// Initialization
 	//--------------------------------------------------------------------------------------
@@ -20,19 +20,17 @@ State mainMenu()
 	//TextCopy(healthDisp, TextFormat("LIVES: %d", health));
 	//TextCopy(scoreDisp, TextFormat("SCORE: %d", score));
 
-	SetExitKey(KEY_ESCAPE);	
+	SetExitKey(KEY_PAUSE);	
 
 	//--------------------------------------------------------------------------------------
 
 	// Main game loop
-	while (!WindowShouldClose()) // Detect window close button or ESC key. Dummy exit on player killed
+	while (true) // Detect window close button or ESC key. Dummy exit on player killed
 	{
 		// Update
 		//----------------------------------------------------------------------------------
 
-		if (IsKeyPressed(KEY_ENTER)) return GAME;
-		if (IsKeyPressed(KEY_S)) return SCORE_M;
-		
+		if (IsKeyPressed(KEY_ESCAPE)) return MAIN_M;
 		//----------------------------------------------------------------------------------
 
 		// Draw
@@ -42,12 +40,9 @@ State mainMenu()
 			ClearBackground(RAYWHITE); // Clear background
 
 			// Menu drawing
-			DrawText("SMURF INVADERS", screenWidth / 2 - MeasureText("SMURF INVADERS", 40) / 2, screenHeight / 2 - 10, 40, DARKGREEN);
+			DrawText("SCORE", screenWidth / 2 - MeasureText("SCORE", 40) / 2, screenHeight / 2 - 10, 40, DARKGREEN);
 
-			DrawText("Press ENTER to start", screenWidth / 2 - MeasureText("Press ENTER to start", 20) / 2, screenHeight / 2 + 50, 20, BLUE);
-			DrawText("Press S to see the scoreboard", screenWidth / 2 - MeasureText("Press S to see the scoreboard", 20) / 2, screenHeight / 2 + 90, 20, BLUE);
-			DrawText("Press ESC to quit", screenWidth / 2 - MeasureText("Press ESC to quit", 20) / 2, screenHeight / 2 + 130, 20, BLUE);
-
+			DrawText("Press ESCAPE to return main menu", screenWidth / 2 - MeasureText("Press ESCAPE to return main menu", 20) / 2, screenHeight / 2 + 50, 20, BLUE);
 		}
 		EndDrawing();
 		//----------------------------------------------------------------------------------
@@ -56,6 +51,4 @@ State mainMenu()
 	// De-Initialization
 	//--------------------------------------------------------------------------------------
 	//--------------------------------------------------------------------------------------
-
-	return EXIT;
 }

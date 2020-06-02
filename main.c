@@ -15,6 +15,7 @@
 
 #include "game.h"
 #include "mainMenu.h"
+#include "scoreMenu.h"
 #include "gameOverMenu.h"
 
 int main()
@@ -41,12 +42,19 @@ int main()
 			gameState = mainMenu();
 			break;
 
+		case SCORE_M:
+			gameState = scoreMenu();
+			break;
+
 		case GAME:
 			gameState = gameCore();
 			break;
 
 		case GO_M:
 			gameState = gameOverMenu();
+			break;
+
+		default:
 			break;
 		}
 

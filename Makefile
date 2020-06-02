@@ -207,6 +207,7 @@ ifeq ($(PLATFORM),PLATFORM_DESKTOP)
         # resource file contains windows executable icon and properties
         # -Wl,--subsystem,windows hides the console window
         CFLAGS += $(RAYLIB_PATH)/src/raylib.rc.data
+        CFLAGS += -Wl,--subsystem,windows
     endif
     ifeq ($(PLATFORM_OS),LINUX)
         ifeq ($(RAYLIB_LIBTYPE),STATIC)
@@ -373,7 +374,7 @@ all:
 
 # Project target defined by PROJECT_NAME
 main: $(OBJS)
-	$(CC) -o main$(EXT) $(OBJS) $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
+	$(CC) -o SmurfInvaders$(EXT) $(OBJS) $(CFLAGS) $(INCLUDE_PATHS) $(LDFLAGS) $(LDLIBS) -D$(PLATFORM)
 
 # Compile source files
 # NOTE: This pattern will compile every module defined on $(OBJS)
